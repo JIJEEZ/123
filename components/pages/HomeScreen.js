@@ -130,6 +130,7 @@ const styles = StyleSheet.create({
     width: Dimensions.get('window').width - 10, // Adjust padding/margin as needed
     alignItems: 'center',
     justifyContent: 'center',
+    marginTop: 3,
   },
   homeRectangleTitle: {
     fontSize: 18,

@@ -1,13 +1,21 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, SafeAreaView, Dimensions } from 'react-native';
-import MapView from 'react-native-maps';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, SafeAreaView, Dimensions, Modal, Pressable } from 'react-native';
+import MapView, { Marker, Callout } from 'react-native-maps';
 import * as Location from 'expo-location';
 
 const MapScreen = () => {
   const [location, setLocation] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
-  const [robotConnected, setRobotConnected] = useState(false); // Added state for robot connection status
-  
+  const [markers, setMarkers] = useState([]);
+  const [selectedMarker, setSelectedMarker] = useState(null);
+  const [modalVisible, setModalVisible] = useState(false);
+  const [soilProperties, setSoilProperties] = useState({
+    nitrogen: 0,
+    phosphorous: 0,
+    potassium: 0,
+    acidity: 0,
+    moisture: 0,
+  });
 
   useEffect(() => {
     (async () => {
@@ -16,14 +24,36 @@ const MapScreen = () => {
         setErrorMsg('Permission to access location was denied');
         return;
       }
-      let location = await Location.getCurrentPositionAsync({});
-      setLocation(location);
+      let currentLocation = await Location.getCurrentPositionAsync({});
+      setLocation(currentLocation);
     })();
   }, []);
 
-  const toggleConnection = () => {
-    // Toggles the connection status when the button is pressed
-    setRobotConnected(!robotConnected);
+  const handleMapPress = (event) => {
+    const { coordinate } = event.nativeEvent;
+    const randomSoilProperties = generateRandomSoilProperties();
+    setMarkers([...markers, { ...coordinate, soilProperties: randomSoilProperties }]);
+  };
+
+  const handleMarkerPress = (marker) => {
+    setSelectedMarker(marker);
+    setModalVisible(true);
+  };
+
+  const generateRandomSoilProperties = () => {
+    return {
+      nitrogen: (Math.random() * 10).toFixed(2),
+      phosphorous: (Math.random() * 10).toFixed(2),
+      potassium: (Math.random() * 10).toFixed(2),
+      acidity: (Math.random() * 14).toFixed(2),
+      moisture: `${(Math.random() * 100).toFixed(2)}%`,
+    };
+  };
+
+  const deleteMarker = () => {
+    const updatedMarkers = markers.filter((marker) => marker !== selectedMarker);
+    setMarkers(updatedMarkers);
+    setModalVisible(false);
   };
 
   return (
@@ -32,7 +62,7 @@ const MapScreen = () => {
         <View style={styles.fixedContentContainer}>
           <View style={styles.homeRectangleContainer}>
             <View style={styles.homeRectangle}>
-              <Text style={styles.homeRectangleTitle}>Home</Text>
+              <Text style={styles.homeRectangleTitle}>Map</Text>
             </View>
           </View>
           <View style={styles.mapContainer}>
@@ -40,21 +70,63 @@ const MapScreen = () => {
               showsMyLocationButton={true}
               showsUserLocation={true}
               style={styles.map}
-            />
-          </View>
-          <View style={styles.textContainer}>
-            <Text style={styles.textTitle}>Soil Nutrient Mapping App</Text>
-            <Text style={styles.textDescription}>
-              A mobile application that can map the nutrients (pH level, moisture content,
-              and NPK values) using the soil robot collector
-            </Text>
-          </View>
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.addButton} onPress={toggleConnection}>
-              <Text style={styles.addButtonLabel}>
-                {robotConnected ? 'Connected' : 'Connect'} {/* Button text changes based on connection status */}
-              </Text>
-            </TouchableOpacity>
+              onPress={handleMapPress}
+            >
+              {markers.map((marker, index) => (
+                <Marker
+                  key={index}
+                  coordinate={marker}
+                  onPress={() => handleMarkerPress(marker)}
+                >
+                  <Callout>
+                    <View>
+                      <Text style={styles.calloutText}>Tap here for details</Text>
+                    </View>
+                  </Callout>
+                </Marker>
+              ))}
+            </MapView>
+            <Modal
+              animationType="slide"
+              transparent={true}
+              visible={modalVisible}
+              onRequestClose={() => {
+                setModalVisible(!modalVisible);
+              }}
+            >
+              <View style={styles.modalContainer}>
+                <View style={styles.modalContent}>
+                  <Text style={styles.modalText}>
+                    {selectedMarker ? `Latitude: ${selectedMarker.latitude}\nLongitude: ${selectedMarker.longitude}` : ''}
+                  </Text>
+                  {selectedMarker && selectedMarker.soilProperties && (
+                    <>
+                      <Text style={styles.modalDetailText}>Nitrogen: {selectedMarker.soilProperties.nitrogen}</Text>
+                      <Text style={styles.modalDetailText}>Phosphorous: {selectedMarker.soilProperties.phosphorous}</Text>
+                      <Text style={styles.modalDetailText}>Potassium: {selectedMarker.soilProperties.potassium}</Text>
+                      <Text style={styles.modalDetailText}>Acidity: {selectedMarker.soilProperties.acidity}</Text>
+                      <Text style={styles.modalDetailText}>Moisture: {selectedMarker.soilProperties.moisture}</Text>
+                    </>
+                  )}
+                  <View style={styles.buttonContainer}>
+                    <Pressable
+                      style={[styles.button, styles.buttonDelete]}
+                      onPress={() => {
+                        deleteMarker();
+                      }}
+                    >
+                      <Text style={styles.textStyle}>Delete Marker</Text>
+                    </Pressable>
+                    <Pressable
+                      style={[styles.button, styles.buttonClose]}
+                      onPress={() => setModalVisible(!modalVisible)}
+                    >
+                      <Text style={styles.textStyle}>Close</Text>
+                    </Pressable>
+                  </View>
+                </View>
+              </View>
+            </Modal>
           </View>
         </View>
       </ScrollView>
@@ -81,43 +153,7 @@ const styles = StyleSheet.create({
   },
   map: {
     width: Dimensions.get('window').width,
-    height: 300,
-  },
-  textContainer: {
-    padding: 20,
-    marginBottom: 20,
-    alignItems: 'center',
-  },
-  textTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    textAlign: 'center',
-  },
-  textDescription: {
-    fontSize: 16,
-    fontWeight: 'normal',
-    textAlign: 'center',
-    marginLeft: 50,
-    marginRight: 50,
-  },
-  buttonContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 20,
-  },
-  addButton: {
-    backgroundColor: '#795548',
-    width: 106,
-    height: 33,
-    borderRadius: 3,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 20, // Adjust this value as needed
-  },
-  addButtonLabel: {
-    fontSize: 18,
-    color: '#FFFFFF',
+    height: 610,
   },
   homeRectangleContainer: {
     alignItems: 'center',
@@ -127,16 +163,60 @@ const styles = StyleSheet.create({
   homeRectangle: {
     backgroundColor: '#795548',
     padding: 20,
-    borderRadius: 20,
-    width: Dimensions.get('window').width - 10, // Adjust padding/margin as needed
+    borderRadius: 10,
+    width: Dimensions.get('window').width - 10,
     alignItems: 'center',
     justifyContent: 'center',
   },
   homeRectangleTitle: {
-    fontSize: 18,
+    fontSize: 20,
     color: '#FFFFFF',
     fontWeight: 'bold',
   },
+  modalContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginTop: 22,
+  },
+  modalContent: {
+    backgroundColor: '#D7CCC8', // Adjust the color to match the theme
+    borderRadius: 20,
+    padding: 35,
+    alignItems: 'center',
+    elevation: 5,
+  },
+  modalText: {
+    marginBottom: 15,
+    textAlign: 'center',
+  },
+  button: {
+    borderRadius: 20,
+    padding: 10,
+    elevation: 2,
+  },
+  buttonClose: {
+    backgroundColor: '#2196F3',
+    marginTop: 20,
+  },
+
+  textStyle: {
+    color: '#FFFFFF',
+    fontWeight: 'bold',
+    textAlign: 'center',
+  },
+
+  modalDetailText: {
+    marginBottom: 10,
+    textAlign: 'center',
+    color: '#000000', // Adjust text color to match the theme
+  },
+
+  buttonDelete: {
+    backgroundColor: '#D32F2F',
+    marginTop: 20,
+  },
+
 });
 
 export default MapScreen;
