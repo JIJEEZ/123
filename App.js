@@ -1,5 +1,4 @@
 import * as React from 'react';
-import { Text, View } from 'react-native';
 import { NavigationContainer } from '@react-navigation/native';
 import { createMaterialBottomTabNavigator } from '@react-navigation/material-bottom-tabs';
 import { MaterialCommunityIcons } from '@expo/vector-icons';
@@ -17,7 +16,7 @@ function MyTabs() {
       initialRouteName="Home"
       activeColor="#FFCA64"
       labelStyle={{ fontSize: 12 }}
-      style={{ backgroundColor: '#FFCA64' }}
+      tabBarStyle={{ backgroundColor: '#AB9790' }} // Change the background color to match the screen color
     >
       <Tab.Screen
         name="Home"
@@ -25,7 +24,7 @@ function MyTabs() {
         options={{
           tabBarLabel: 'Home',
           tabBarIcon: ({ color }) => (
-            <MaterialCommunityIcons name="home" color={'white'} size={26} />
+            <MaterialCommunityIcons name="home" color={'black'} size={26} />
           ),
         }}
       />
@@ -35,7 +34,7 @@ function MyTabs() {
         options={{
           tabBarLabel: 'Map',
           tabBarIcon: ({ color }) => (
-            <MaterialCommunityIcons name="map-marker" color={'white'} size={26} />
+            <MaterialCommunityIcons name="map-marker" color={'black'} size={26} />
           ),
         }}
       />
@@ -45,7 +44,7 @@ function MyTabs() {
         options={{
           tabBarLabel: 'Control',
           tabBarIcon: ({ color }) => (
-            <MaterialCommunityIcons name="car" color={'white'} size={26} />
+            <MaterialCommunityIcons name="car" color={'black'} size={26} />
           ),
         }}
       />

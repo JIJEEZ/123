@@ -1,7 +1,30 @@
-import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, SafeAreaView, Image } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, ScrollView, SafeAreaView, Dimensions } from 'react-native';
+import MapView from 'react-native-maps';
+import * as Location from 'expo-location';
 
 const HomeScreen = () => {
+  const [location, setLocation] = useState(null);
+  const [errorMsg, setErrorMsg] = useState(null);
+  const [robotConnected, setRobotConnected] = useState(false); // Added state for robot connection status
+
+  useEffect(() => {
+    (async () => {
+      let { status } = await Location.requestForegroundPermissionsAsync();
+      if (status !== 'granted') {
+        setErrorMsg('Permission to access location was denied');
+        return;
+      }
+      let location = await Location.getCurrentPositionAsync({});
+      setLocation(location);
+    })();
+  }, []);
+
+  const toggleConnection = () => {
+    // Toggles the connection status when the button is pressed
+    setRobotConnected(!robotConnected);
+  };
+
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView>
@@ -12,12 +35,11 @@ const HomeScreen = () => {
             </View>
           </View>
           <View style={styles.mapContainer}>
-            <iframe
-              src="https://www.google.com/maps/embed?pb=!1m18!1m12!1m3!1d3247.747274222966!2d121.1485674781354!3d14.677561123294078!2m3!1f0!2f0!3f0!3m2!1i1024!2i768!4f13.1!3m3!1m2!1s0x3397bbfc5993bfa1%3A0x8c02786f2a23ccc7!2sAdventure%20Farm!5e0!3m2!1sen!2sph!4v1704433119485!5m2!1sen!2sph"
-              style={{ border: "0", width: "100%", height: '300px' }}
-              allowFullScreen={true}
-              loading="lazy"
-            ></iframe>
+            <MapView
+              showsMyLocationButton={true}
+              showsUserLocation={true}
+              style={styles.map}
+            />
           </View>
           <View style={styles.textContainer}>
             <Text style={styles.textTitle}>Soil Nutrient Mapping App</Text>
@@ -27,8 +49,10 @@ const HomeScreen = () => {
             </Text>
           </View>
           <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.addButton}>
-              <Text style={styles.addButtonLabel}>Connect</Text>
+            <TouchableOpacity style={styles.addButton} onPress={toggleConnection}>
+              <Text style={styles.addButtonLabel}>
+                {robotConnected ? 'Connected' : 'Connect'} {/* Button text changes based on connection status */}
+              </Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -52,8 +76,11 @@ const styles = StyleSheet.create({
   mapContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 40,
-    marginBottom: 40,
+    marginTop: 30,
+  },
+  map: {
+    width: Dimensions.get('window').width,
+    height: 300,
   },
   textContainer: {
     padding: 20,
@@ -85,7 +112,7 @@ const styles = StyleSheet.create({
     borderRadius: 3,
     alignItems: 'center',
     justifyContent: 'center',
-    top: 100,
+    marginTop: 20, // Adjust this value as needed
   },
   addButtonLabel: {
     fontSize: 18,
@@ -100,15 +127,14 @@ const styles = StyleSheet.create({
     backgroundColor: '#795548',
     padding: 20,
     borderRadius: 20,
-    width: '100%',
-    height: 55,
+    width: Dimensions.get('window').width - 10, // Adjust padding/margin as needed
+    alignItems: 'center',
+    justifyContent: 'center',
   },
   homeRectangleTitle: {
     fontSize: 18,
     color: '#FFFFFF',
     fontWeight: 'bold',
-    marginLeft: 10,
-    bottom: 5,
   },
 });
 
