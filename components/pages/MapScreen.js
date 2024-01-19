@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, SafeAreaView, Dimensions, Modal, Pressable } from 'react-native';
 import MapView, { Marker, Callout } from 'react-native-maps';
+import { FontAwesome, MaterialCommunityIcons } from '@expo/vector-icons'; // Import FontAwesome
 import * as Location from 'expo-location';
 
 const MapScreen = () => {
@@ -32,7 +33,7 @@ const MapScreen = () => {
   const handleMapPress = (event) => {
     const { coordinate } = event.nativeEvent;
     const randomSoilProperties = generateRandomSoilProperties();
-    setMarkers([...markers, { ...coordinate, soilProperties: randomSoilProperties }]);
+    setMarkers((prevMarkers) => [...prevMarkers, { ...coordinate, soilProperties: randomSoilProperties }]);
   };
 
   const handleMarkerPress = (marker) => {
@@ -40,18 +41,38 @@ const MapScreen = () => {
     setModalVisible(true);
   };
 
+  const renderIcon = (name) => {
+    switch (name) {
+      case 'Nitrogen':
+        return <MaterialCommunityIcons name="alpha-n-box" color={'green'} size={24} />
+      case 'Phosphorous':
+        return <MaterialCommunityIcons name="alpha-p-box" color={'green'} size={24} />
+      case 'Potassium':
+        return <MaterialCommunityIcons name="alpha-k-box" color={'green'} size={24} />
+      case 'Acidity':
+        return <MaterialCommunityIcons name="thermometer" color={'red'} size={24} />
+      case 'Moisture':
+        return <FontAwesome name="tint" size={24} color="blue" />
+      default:
+        return null;
+    }
+  };
+
   const generateRandomSoilProperties = () => {
+    const index = markers.length + 1;
+    const name = `Sampling Point #${index}`;
     return {
-      nitrogen: (Math.random() * 10).toFixed(2),
-      phosphorous: (Math.random() * 10).toFixed(2),
-      potassium: (Math.random() * 10).toFixed(2),
-      acidity: (Math.random() * 14).toFixed(2),
-      moisture: `${(Math.random() * 100).toFixed(2)}%`,
+      name,
+      Nitrogen: (Math.random() * 10).toFixed(2),
+      Phosphorous: (Math.random() * 10).toFixed(2),
+      Potassium: (Math.random() * 10).toFixed(2),
+      Acidity: (Math.random() * 14).toFixed(2),
+      Moisture: `${(Math.random() * 100).toFixed(2)}%`,
     };
   };
 
   const deleteMarker = () => {
-    const updatedMarkers = markers.filter((marker) => marker !== selectedMarker);
+    const updatedMarkers = markers.filter((marker) => marker.latitude !== selectedMarker.latitude || marker.longitude !== selectedMarker.longitude);
     setMarkers(updatedMarkers);
     setModalVisible(false);
   };
@@ -67,6 +88,7 @@ const MapScreen = () => {
           </View>
           <View style={styles.mapContainer}>
             <MapView
+              provider="google"
               showsMyLocationButton={true}
               showsUserLocation={true}
               style={styles.map}
@@ -74,8 +96,9 @@ const MapScreen = () => {
             >
               {markers.map((marker, index) => (
                 <Marker
-                  key={index}
+                  key={index.toString()}
                   coordinate={marker}
+                  title={marker.soilProperties.name}
                   onPress={() => handleMarkerPress(marker)}
                 >
                   <Callout>
@@ -101,11 +124,18 @@ const MapScreen = () => {
                   </Text>
                   {selectedMarker && selectedMarker.soilProperties && (
                     <>
-                      <Text style={styles.modalDetailText}>Nitrogen: {selectedMarker.soilProperties.nitrogen}</Text>
-                      <Text style={styles.modalDetailText}>Phosphorous: {selectedMarker.soilProperties.phosphorous}</Text>
-                      <Text style={styles.modalDetailText}>Potassium: {selectedMarker.soilProperties.potassium}</Text>
-                      <Text style={styles.modalDetailText}>Acidity: {selectedMarker.soilProperties.acidity}</Text>
-                      <Text style={styles.modalDetailText}>Moisture: {selectedMarker.soilProperties.moisture}</Text>
+                      <View style={styles.iconLabelContainer}>
+                        <FontAwesome name="map-marker" size={24} color="red" />
+                        <Text style={[styles.iconLabelText, styles.samplingPointText]}>{selectedMarker.soilProperties.name}</Text>
+                      </View>
+                      {Object.keys(selectedMarker.soilProperties).map((key) => (
+                        key !== 'name' && (
+                          <View key={key} style={styles.iconLabelContainer}>
+                            {renderIcon(key)}
+                            <Text style={styles.iconLabelText}>{`${key}: ${selectedMarker.soilProperties[key]}`}</Text>
+                          </View>
+                        )
+                      ))}
                     </>
                   )}
                   <View style={styles.buttonContainer}>
@@ -153,12 +183,12 @@ const styles = StyleSheet.create({
   },
   map: {
     width: Dimensions.get('window').width,
-    height: 610,
+    height: 280,
   },
   homeRectangleContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 20,
+    marginTop: 0, // Adjust this value to control the distance from the status bar
   },
   homeRectangle: {
     backgroundColor: '#795548',
@@ -180,7 +210,7 @@ const styles = StyleSheet.create({
     marginTop: 22,
   },
   modalContent: {
-    backgroundColor: '#D7CCC8', // Adjust the color to match the theme
+    backgroundColor: '#D7CCC8',
     borderRadius: 20,
     padding: 35,
     alignItems: 'center',
@@ -199,24 +229,36 @@ const styles = StyleSheet.create({
     backgroundColor: '#2196F3',
     marginTop: 20,
   },
-
   textStyle: {
     color: '#FFFFFF',
     fontWeight: 'bold',
     textAlign: 'center',
   },
-
   modalDetailText: {
     marginBottom: 10,
     textAlign: 'center',
-    color: '#000000', // Adjust text color to match the theme
+    color: '#000000',
   },
-
   buttonDelete: {
-    backgroundColor: '#D32F2F',
+    backgroundColor: '#7a4636',
     marginTop: 20,
   },
-
+  calloutText: {
+    fontSize: 12,
+    marginBottom: 5,
+  },
+  iconLabelContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 5,
+  },
+  iconLabelText: {
+    marginLeft: 5,
+  },
+  samplingPointText: {
+    fontSize: 20,
+    fontWeight: 'bold',
+  },
 });
 
 export default MapScreen;

@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, SafeAreaView, Dimensions } from 'react-native';
-import MapView from 'react-native-maps';
 import * as Location from 'expo-location';
 
 const ControlScreen = () => {
   const [location, setLocation] = useState(null);
   const [errorMsg, setErrorMsg] = useState(null);
-  const [robotConnected, setRobotConnected] = useState(false); // Added state for robot connection status
-  
+  const [selectedMarker, setSelectedMarker] = useState(null);
 
   useEffect(() => {
     (async () => {
@@ -16,44 +14,44 @@ const ControlScreen = () => {
         setErrorMsg('Permission to access location was denied');
         return;
       }
-      let location = await Location.getCurrentPositionAsync({});
-      setLocation(location);
+      let currentLocation = await Location.getCurrentPositionAsync({});
+      setLocation(currentLocation);
     })();
   }, []);
 
-  const toggleConnection = () => {
-    // Toggles the connection status when the button is pressed
-    setRobotConnected(!robotConnected);
+  const handleControlCommand = (command) => {
+    // Implement logic to send control commands to the robot based on the button pressed
+    console.log(`Sending command: ${command}`);
+    // Example: You can send commands to a server or directly control a connected robot.
+  };
+
+  const handleSoilCollection = () => {
+    // Implement logic to command the robot to collect soil and analyze it
+    console.log('Collecting soil and analyzing...');
+    // Example: You can send a specific command to the robot for soil collection and analysis.
   };
 
   return (
     <SafeAreaView style={styles.container}>
       <ScrollView>
         <View style={styles.fixedContentContainer}>
-          <View style={styles.homeRectangleContainer}>
-            <View style={styles.homeRectangle}>
-              <Text style={styles.homeRectangleTitle}>Home</Text>
+          <View style={styles.controlContainer}>
+            <TouchableOpacity style={styles.controlButton} onPress={() => handleControlCommand('forward')}>
+              <Text style={styles.controlButtonText}>Forward</Text>
+            </TouchableOpacity>
+            <View style={styles.horizontalControls}>
+              <TouchableOpacity style={styles.controlButton} onPress={() => handleControlCommand('left')}>
+                <Text style={styles.controlButtonText}>Left</Text>
+              </TouchableOpacity>
+              <TouchableOpacity style={styles.controlButton} onPress={() => handleControlCommand('right')}>
+                <Text style={styles.controlButtonText}>Right</Text>
+              </TouchableOpacity>
             </View>
-          </View>
-          <View style={styles.mapContainer}>
-            <MapView
-              showsMyLocationButton={true}
-              showsUserLocation={true}
-              style={styles.map}
-            />
-          </View>
-          <View style={styles.textContainer}>
-            <Text style={styles.textTitle}>Soil Nutrient Mapping App</Text>
-            <Text style={styles.textDescription}>
-              A mobile application that can map the nutrients (pH level, moisture content,
-              and NPK values) using the soil robot collector
-            </Text>
-          </View>
-          <View style={styles.buttonContainer}>
-            <TouchableOpacity style={styles.addButton} onPress={toggleConnection}>
-              <Text style={styles.addButtonLabel}>
-                {robotConnected ? 'Connected' : 'Connect'} {/* Button text changes based on connection status */}
-              </Text>
+            <TouchableOpacity style={styles.controlButton} onPress={() => handleControlCommand('backward')}>
+              <Text style={styles.controlButtonText}>Backward</Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.analysisButton} onPress={handleSoilCollection}>
+              <Text style={styles.controlButtonText}>Collect & Analyze</Text>
             </TouchableOpacity>
           </View>
         </View>
@@ -74,67 +72,31 @@ const styles = StyleSheet.create({
     marginTop: 20,
     marginBottom: 20,
   },
-  mapContainer: {
+  controlContainer: {
     alignItems: 'center',
     justifyContent: 'center',
-    marginTop: 30,
-  },
-  map: {
-    width: Dimensions.get('window').width,
-    height: 300,
-  },
-  textContainer: {
-    padding: 20,
     marginBottom: 20,
-    alignItems: 'center',
   },
-  textTitle: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
-    textAlign: 'center',
+  controlButton: {
+    backgroundColor: '#3498db',
+    padding: 15,
+    borderRadius: 8,
+    marginVertical: 50,
+    marginHorizontal: 50,
   },
-  textDescription: {
-    fontSize: 16,
-    fontWeight: 'normal',
-    textAlign: 'center',
-    marginLeft: 50,
-    marginRight: 50,
+  analysisButton: {
+    backgroundColor: '#27ae60',
+    padding: 15,
+    borderRadius: 8,
+    marginVertical: 8,
   },
-  buttonContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 20,
+  horizontalControls: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
   },
-  addButton: {
-    backgroundColor: '#795548',
-    width: 106,
-    height: 33,
-    borderRadius: 3,
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 20, // Adjust this value as needed
-  },
-  addButtonLabel: {
-    fontSize: 18,
-    color: '#FFFFFF',
-  },
-  homeRectangleContainer: {
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginTop: 20,
-  },
-  homeRectangle: {
-    backgroundColor: '#795548',
-    padding: 20,
-    borderRadius: 20,
-    width: Dimensions.get('window').width - 10, // Adjust padding/margin as needed
-    alignItems: 'center',
-    justifyContent: 'center',
-  },
-  homeRectangleTitle: {
-    fontSize: 18,
-    color: '#FFFFFF',
+  controlButtonText: {
+    color: '#ffffff',
+    fontSize: 14,
     fontWeight: 'bold',
   },
 });
