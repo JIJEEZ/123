@@ -174,10 +174,10 @@ const MapScreen = () => {
 
   async function storeMarker(userId,coordinates,properties){
     // Specify the API endpoint for user data
-    const apiUrl = baseUrl+'store/'+userId;
+    const apiUrl = baseUrl+'analysis/store/'+userId;
     console.log(apiUrl)
     
-    // console.log(...properties)
+    // console.log({...coordinates, ...properties})
     // properties.image = 
     // console.log("PASSED")
 
