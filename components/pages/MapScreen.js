@@ -1,7 +1,12 @@
 import React, { useState, useEffect } from 'react';
+// import { Image } from 'expo-image';
 import { View, Text, TouchableOpacity, StyleSheet, ScrollView, SafeAreaView, Dimensions, Modal, Pressable } from 'react-native';
 import MapView, { Marker, Callout } from 'react-native-maps';
 import * as Location from 'expo-location';
+
+// import site_sample from './assets/site_sample.png'; 
+
+const baseUrl = "http://192.168.254.110:5000/api/"
 
 const MapScreen = () => {
   const [location, setLocation] = useState(null);
@@ -11,11 +16,12 @@ const MapScreen = () => {
   const [modalVisible, setModalVisible] = useState(false);
   const [soilProperties, setSoilProperties] = useState({
     nitrogen: 0,
-    phosphorous: 0,
+    phosphorus: 0,
     potassium: 0,
     acidity: 0,
     moisture: 0,
   });
+  const [userId, setUserId] = useState(-1)
 
   useEffect(() => {
     (async () => {
@@ -26,15 +32,38 @@ const MapScreen = () => {
       }
       let currentLocation = await Location.getCurrentPositionAsync({});
       setLocation(currentLocation);
-      const data = fetchProperties()
-      
-      // setMarkers([...markers, { ...coordinate, soilProperties: randomSoilProperties }]);
+  
+      const data = await getMarkers(userId); // Await the function call
+  
+      // Check if data is valid before processing it further
+      if (Array.isArray(data)) {
+        for (let i = 0; i < data.length; i++) {
+          // console.log(i)
+          const entry = {
+            latitude: data[i].latitude,
+            longitude: data[i].longitude,
+            soilProperties: {
+              moisture: String(data[i].moisture),
+              acidity: String(data[i].acidity),
+              nitrogen: String(data[i].nitrogen),
+              phosphorus: String(data[i].phosphorus),
+              potassium: String(data[i].potassium)
+            }
+          };
+          setMarkers(prevMarkers => [...prevMarkers, entry]);
+        }
+      } else {
+        console.error('Invalid data received:', data);
+      }
     })();
-  }, []);
+  }, []); 
+  
 
   const handleMapPress = (event) => {
     const { coordinate } = event.nativeEvent;
     const randomSoilProperties = generateRandomSoilProperties();
+
+    const result = storeMarker(userId, coordinate, randomSoilProperties);
     setMarkers([...markers, { ...coordinate, soilProperties: randomSoilProperties }]);
   };
 
@@ -46,12 +75,16 @@ const MapScreen = () => {
   const generateRandomSoilProperties = () => {
     return {
       nitrogen: (Math.random() * 10).toFixed(2),
-      phosphorous: (Math.random() * 10).toFixed(2),
+      phosphorus: (Math.random() * 10).toFixed(2),
       potassium: (Math.random() * 10).toFixed(2),
       acidity: (Math.random() * 14).toFixed(2),
       moisture: `${(Math.random() * 100).toFixed(2)}%`,
+      soilType: 'silt',
+      image: btoa(asciiString)
     };
   };
+  
+  // TODO: add image to base 64 conversion
 
   const deleteMarker = () => {
     const updatedMarkers = markers.filter((marker) => marker !== selectedMarker);
@@ -75,32 +108,115 @@ const MapScreen = () => {
   //   });
   // };
 
-  const fetchProperties = async () => {
-    try {
-      // const base64Image = await convertImageToBase64(imageUri)
-      console.log("LOADING LOADING LOADING...")
-      // console.log(base64Image)
-      const response = await fetch('https://soilpd-2024.up.railway.app/api/analysis/get_analysis', { 
-      method: 'GET',
-      body: JSON.stringify({
-          "userId":-1,
-        }),
-      headers: {
-        'Content-Type': 'application/json',
-      },
-    });
-      console.log("working2")
-      const result = await response.json();
-      // result assign to state
-      console.log("working3")
-      console.log(result)
-    } catch (error) {
-      // console.log(error)
-    }
-  };
+  // const fetchProperties = async () => {
+  //   try {
+  //     // const base64Image = await convertImageToBase64(imageUri)
+  //     console.log("LOADING LOADING LOADING...")
+  //     // console.log(base64Image)
+  //     const response = await fetch('https://soilpd-2024.up.railway.app/api/analysis/get_analysis', { 
+  //     method: 'GET',
+  //     body: JSON.stringify({
+  //         "userId":-1,
+  //       }),
+  //     headers: {
+  //       'Content-Type': 'application/json',
+  //     },
+  //   });
+  //     console.log("working2")
+  //     const result = await response.json();
+  //     // result assign to state
+  //     console.log("working3")
+  //     console.log(result)
+  //   } catch (error) {
+  //     // console.log(error)
+  //   }
+  // };
 
-  const onPress = () =>{
-    console.log("pressed")
+  async function getMarkers(userId){
+    // Specify the API endpoint for user data
+    const apiUrl = baseUrl+'analysis/'+userId;
+    // console.log(apiUrl)
+
+    // Make a GET request using the Fetch API
+    const data = await fetch(apiUrl,{
+      method: 'GET',
+      headers: { 
+        'Content-type': 'application/json' 
+      },
+      // body: JSON.stringify({ "userId": userId })
+      })
+      .then(response => {
+        if (!response.ok) {
+          // console.log(response)
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(response => {
+        // Process the retrieved user data
+        console.log('msg:', response.msg);
+        // console.log("analysis:", response.analysis);
+        return response.analysis
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        // Log the response for more information
+        console.log('Response:', error);
+        // console.log('body:', response);
+      });
+
+      if(!data){
+        return false
+      }
+
+      return data
+  }
+
+  async function storeMarker(userId,coordinates,properties){
+    // Specify the API endpoint for user data
+    const apiUrl = baseUrl+'store/'+userId;
+    console.log(apiUrl)
+    
+    // console.log(...properties)
+    // properties.image = 
+    // console.log("PASSED")
+
+    const toStore = { ...coordinates, ...properties }
+    console.log(toStore)
+
+    // Make a GET request using the Fetch API
+    const data = await fetch(apiUrl,{
+      method: 'POST',
+      headers: { 
+        'Content-type': 'application/json' 
+      },
+      body: JSON.stringify(toStore)
+      })
+      .then(response => {
+        if (!response.ok) {
+          // console.log(response)
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(response => {
+        // Process the retrieved user data
+        console.log('msg:', response.msg);
+        // console.log("analysis:", response.analysis);
+        return {msg: "Store success", data: toStore}
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        // Log the response for more information
+        console.log('Response:', error);
+        // console.log('body:', response);
+      });
+
+      if(!data){
+        return false
+      }
+
+      return data
   }
 
 
@@ -114,7 +230,7 @@ const MapScreen = () => {
             </View>
           </View>
           <View style={styles.mapContainer}>
-          <TouchableOpacity onPress={onPress}><Text>click me</Text></TouchableOpacity>
+          {/* <TouchableOpacity onPress={() => onPress(userId)} ><Text>click me</Text></TouchableOpacity> */}
             <MapView
               showsMyLocationButton={true}
               showsUserLocation={true}
@@ -151,11 +267,19 @@ const MapScreen = () => {
                   </Text>
                   {selectedMarker && selectedMarker.soilProperties && (
                     <>
+                      {/* <Image
+                        style={styles.image}
+                        source={selectedMarker.image}
+                        placeholder={"text"}
+                        contentFit="contain"
+                        transition={1000}
+                      /> */}
                       <Text style={styles.modalDetailText}>Nitrogen: {selectedMarker.soilProperties.nitrogen}</Text>
-                      <Text style={styles.modalDetailText}>Phosphorous: {selectedMarker.soilProperties.phosphorous}</Text>
+                      <Text style={styles.modalDetailText}>Phosphorus: {selectedMarker.soilProperties.phosphorus}</Text>
                       <Text style={styles.modalDetailText}>Potassium: {selectedMarker.soilProperties.potassium}</Text>
                       <Text style={styles.modalDetailText}>Acidity: {selectedMarker.soilProperties.acidity}</Text>
                       <Text style={styles.modalDetailText}>Moisture: {selectedMarker.soilProperties.moisture}</Text>
+                      <Text style={styles.modalDetailText}>Type: {selectedMarker.soilProperties.soilType}</Text>
                     </>
                   )}
                   <View style={styles.buttonContainer}>
@@ -266,6 +390,12 @@ const styles = StyleSheet.create({
     backgroundColor: '#D32F2F',
     marginTop: 20,
   },
+
+  image:{
+    border: 1,
+    width: 100,
+    height: 100
+  }
 
 });
 

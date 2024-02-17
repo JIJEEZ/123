@@ -2349,6 +2349,11 @@
   resolved "https://registry.npmjs.org/@react-native/assets-registry/-/assets-registry-0.72.0.tgz"
   integrity sha512-Im93xRJuHHxb1wniGhBMsxLwcfzdYreSZVQGDoMJgkd6+Iky61LInGEHnQCTN0fKNYF1Dvcofb4uMmE1RQHXHQ==
 
+"@react-native/assets-registry@~0.73.1":
+  version "0.73.1"
+  resolved "https://registry.npmjs.org/@react-native/assets-registry/-/assets-registry-0.73.1.tgz"
+  integrity sha512-2FgAbU7uKM5SbbW9QptPPZx8N9Ke2L7bsHb+EhAanZjFZunA9PaYtyjUQ1s7HD+zDVqOQIvjkpXSv7Kejd2tqg==
+
 "@react-native/codegen@^0.72.7":
   version "0.72.8"
   resolved "https://registry.npmjs.org/@react-native/codegen/-/codegen-0.72.8.tgz"
@@ -4637,6 +4642,13 @@ expo-font@~11.4.0:
   integrity sha512-nkmezCFD7gR/I6R+e3/ry18uEfF8uYrr6h+PdBJu+3dawoLOpo+wFb/RG9bHUekU1/cPanR58LR7G5MEMKHR2w==
   dependencies:
     fontfaceobserver "^2.1.0"
+
+expo-image@^1.10.6:
+  version "1.10.6"
+  resolved "https://registry.npmjs.org/expo-image/-/expo-image-1.10.6.tgz"
+  integrity sha512-vcnAIym1eU8vQgV1re1E7rVQZStJimBa4aPDhjFfzMzbddAF7heJuagyewiUkTzbZUwYzPaZAie6VJPyWx9Ueg==
+  dependencies:
+    "@react-native/assets-registry" "~0.73.1"
 
 expo-keep-awake@~12.3.0:
   version "12.3.0"
