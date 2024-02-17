@@ -80,7 +80,7 @@ const MapScreen = () => {
       acidity: (Math.random() * 14).toFixed(2),
       moisture: `${(Math.random() * 100).toFixed(2)}%`,
       soilType: 'silt',
-      image: btoa(asciiString)
+      image: "none"
     };
   };
   
