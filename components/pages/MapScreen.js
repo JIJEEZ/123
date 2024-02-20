@@ -40,6 +40,7 @@ const MapScreen = () => {
         for (let i = 0; i < data.length; i++) {
           // console.log(i)
           const entry = {
+            mapId: data[i].mapId,
             latitude: data[i].latitude,
             longitude: data[i].longitude,
             soilProperties: {
@@ -59,12 +60,15 @@ const MapScreen = () => {
   }, []); 
   
 
-  const handleMapPress = (event) => {
+  async function handleMapPress (event) {
     const { coordinate } = event.nativeEvent;
     const randomSoilProperties = generateRandomSoilProperties();
+    const mapId = String(14.626).replace('.','_').slice(0,)+ '_' + String(14.626)
+                      .replace('.','_').slice(0,8) + '_' + Math.floor(Math.random() * 10000)
+                      
 
-    const result = storeMarker(userId, coordinate, randomSoilProperties);
-    setMarkers([...markers, { ...coordinate, soilProperties: randomSoilProperties }]);
+    const result = await storeMarker(mapId, userId, coordinate, randomSoilProperties);
+    setMarkers([...markers, { mapId:mapId, ...coordinate, soilProperties: randomSoilProperties }]);
   };
 
   const handleMarkerPress = (marker) => {
@@ -86,8 +90,9 @@ const MapScreen = () => {
   
   // TODO: add image to base 64 conversion
 
-  const deleteMarker = () => {
+  async function handleDeleteMarker () {
     const updatedMarkers = markers.filter((marker) => marker !== selectedMarker);
+    result = await deleteMarker(selectedMarker.mapId)
     setMarkers(updatedMarkers);
     setModalVisible(false);
   };
@@ -132,6 +137,44 @@ const MapScreen = () => {
   //   }
   // };
 
+  async function deleteMarker(mapId){
+    const apiUrl = baseUrl+'analysis/'+mapId;
+
+    // Make a DELETE request using the Fetch API
+    const data = await fetch(apiUrl,{
+      method: 'DELETE',
+      headers: { 
+        'Content-type': 'application/json' 
+      },
+      // body: JSON.stringify({ "userId": userId })
+      })
+      .then(response => {
+        if (!response.ok) {
+          // console.log(response)
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(response => {
+        // Process the retrieved user data
+        console.log('msg:', response.msg);
+        // console.log("analysis:", response.analysis);
+        return response.analysis
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        // Log the response for more information
+        console.log('Response:', error);
+        // console.log('body:', response);
+      });
+
+      if(!data){
+        return false
+      }
+
+      return data
+  }
+
   async function getMarkers(userId){
     // Specify the API endpoint for user data
     const apiUrl = baseUrl+'analysis/'+userId;
@@ -172,7 +215,7 @@ const MapScreen = () => {
       return data
   }
 
-  async function storeMarker(userId,coordinates,properties){
+  async function storeMarker(mapId, userId,coordinates,properties){
     // Specify the API endpoint for user data
     const apiUrl = baseUrl+'analysis/store/'+userId;
     console.log(apiUrl)
@@ -181,7 +224,7 @@ const MapScreen = () => {
     // properties.image = 
     // console.log("PASSED")
 
-    const toStore = { ...coordinates, ...properties }
+    const toStore = { mapId:mapId, ...coordinates, ...properties }
     console.log(toStore)
 
     // Make a GET request using the Fetch API
@@ -286,7 +329,7 @@ const MapScreen = () => {
                     <Pressable
                       style={[styles.button, styles.buttonDelete]}
                       onPress={() => {
-                        deleteMarker();
+                        handleDeleteMarker();
                       }}
                     >
                       <Text style={styles.textStyle}>Delete Marker</Text>
