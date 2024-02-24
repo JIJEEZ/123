@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 // import { Image } from 'expo-image';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, SafeAreaView, Dimensions, Modal, Pressable } from 'react-native';
+import { View, Text, TouchableOpacity, TextInput, StyleSheet, ScrollView, SafeAreaView, Dimensions, Modal, Pressable } from 'react-native';
 import MapView, { Marker, Callout } from 'react-native-maps';
 import * as Location from 'expo-location';
 
@@ -22,6 +22,16 @@ const MapScreen = () => {
     moisture: 0,
   });
   const [userId, setUserId] = useState(-1)
+  const [editedNitrogen, setEditedNitrogen] = useState('')
+  const [editedPhosphorus, setEditedPhosphorus] = useState('')
+  const [editedPotassium, setEditedPotassium] = useState('')
+  const [editedAcidity, setEditedAcidity] = useState('')
+  const [editedMoisture, setEditedMoisture] = useState('')
+  const [editedType, setEditedType] = useState('')
+  const [editedLatitude, setEditedLatitude] = useState('')
+  const [editedLongitude, setEditedLongitude] = useState('')
+  const [editedImage, setEditedImage] = useState('')
+  const [editMode, setEditMode] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -91,7 +101,7 @@ const MapScreen = () => {
   // TODO: add image to base 64 conversion
 
   async function handleDeleteMarker () {
-    const updatedMarkers = markers.filter((marker) => marker !== selectedMarker);
+    const updatedMarkers = markers.filter((marker) => marker.mapId !== selectedMarker.mapId);
     result = await deleteMarker(selectedMarker.mapId)
     setMarkers(updatedMarkers);
     setModalVisible(false);
@@ -262,6 +272,92 @@ const MapScreen = () => {
       return data
   }
 
+  async function handleUpdateMarker() {
+  
+    setEditedNitrogen('');
+    setEditedPhosphorus('-1');
+    setEditedPotassium('-1');
+    setEditedAcidity('-1');
+    setEditedMoisture('-1');
+    setEditedType('clay');
+    setEditedImage('none');
+  
+    const entries = {
+      nitrogen: editedNitrogen,
+      phosphorus: editedPhosphorus,
+      potassium: editedPotassium,
+      acidity: editedAcidity,
+      moisture: editedMoisture,
+      type: editedType,
+      image: editedImage
+    };
+
+    const keys = Object.keys(entries);
+    for (let i = 0; i < keys.length; i++) {
+      console.log(entries[keys[i]]);
+      if (entries[keys[i]] === '') {
+        delete entries[keys[i]];
+      }
+    }
+
+    const result = await updateMarker(selectedMarker.mapId, entries);
+  
+    console.log(selectedMarker);
+
+  
+    if (result) {
+      setSelectedMarker({ ...selectedMarker, soilProperties: entries });
+      setMarkers([...markers])
+      console.log(selectedMarker);
+      console.log("Edits Saved.");
+      setEditMode(false); // Exit edit mode after saving
+    } else {
+      console.log("Failed to update marker.");
+    }
+  
+    return selectedMarker;
+  }
+  
+
+  async function updateMarker(mapId, entries){
+    // Specify the API endpoint for user data
+    const apiUrl = baseUrl+'analysis/update/'+mapId;
+
+    // Make a GET request using the Fetch API
+    const data = await fetch(apiUrl,{
+      method: 'PUT',
+      headers: { 
+        'Content-type': 'application/json' 
+      },
+      body: JSON.stringify(entries)
+      })
+      .then(response => {
+        if (!response.ok) {
+          // console.log(response)
+          throw new Error('Network response was not ok');
+        }
+        return response.json();
+      })
+      .then(response => {
+        // Process the retrieved user data
+        console.log('msg:', response.msg);
+        // console.log("analysis:", response.analysis);
+        return {msg: "Store success", data: entries}
+      })
+      .catch(error => {
+        console.error('Error:', error);
+        // Log the response for more information
+        console.log('Response:', error);
+        // console.log('body:', response);
+      });
+
+      if(!data){
+        return false
+      }
+
+      return data
+  }
+
 
   return (
     <SafeAreaView style={styles.container}>
@@ -305,42 +401,72 @@ const MapScreen = () => {
             >
               <View style={styles.modalContainer}>
                 <View style={styles.modalContent}>
-                  <Text style={styles.modalText}>
-                    {selectedMarker ? `Latitude: ${selectedMarker.latitude}\nLongitude: ${selectedMarker.longitude}` : ''}
-                  </Text>
-                  {selectedMarker && selectedMarker.soilProperties && (
-                    <>
-                      {/* <Image
-                        style={styles.image}
-                        source={selectedMarker.image}
-                        placeholder={"text"}
-                        contentFit="contain"
-                        transition={1000}
-                      /> */}
-                      <Text style={styles.modalDetailText}>Nitrogen: {selectedMarker.soilProperties.nitrogen}</Text>
-                      <Text style={styles.modalDetailText}>Phosphorus: {selectedMarker.soilProperties.phosphorus}</Text>
-                      <Text style={styles.modalDetailText}>Potassium: {selectedMarker.soilProperties.potassium}</Text>
-                      <Text style={styles.modalDetailText}>Acidity: {selectedMarker.soilProperties.acidity}</Text>
-                      <Text style={styles.modalDetailText}>Moisture: {selectedMarker.soilProperties.moisture}</Text>
-                      <Text style={styles.modalDetailText}>Type: {selectedMarker.soilProperties.soilType}</Text>
-                    </>
-                  )}
-                  <View style={styles.buttonContainer}>
-                    <Pressable
-                      style={[styles.button, styles.buttonDelete]}
-                      onPress={() => {
-                        handleDeleteMarker();
-                      }}
-                    >
-                      <Text style={styles.textStyle}>Delete Marker</Text>
-                    </Pressable>
-                    <Pressable
-                      style={[styles.button, styles.buttonClose]}
-                      onPress={() => setModalVisible(!modalVisible)}
-                    >
-                      <Text style={styles.textStyle}>Close</Text>
-                    </Pressable>
-                  </View>
+                <Text style={styles.modalText}>
+                  {selectedMarker ? `Latitude: ${selectedMarker.latitude}\nLongitude: ${selectedMarker.longitude}` : ''}
+                </Text>
+                {selectedMarker && selectedMarker.soilProperties && (
+                  <>
+                    {/* Existing data display */}
+                    <Text style={styles.modalDetailText}>Nitrogen: {selectedMarker.soilProperties.nitrogen}</Text>
+                    <Text style={styles.modalDetailText}>Phosphorus: {selectedMarker.soilProperties.phosphorus}</Text>
+                    <Text style={styles.modalDetailText}>Potassium: {selectedMarker.soilProperties.potassium}</Text>
+                    <Text style={styles.modalDetailText}>Acidity: {selectedMarker.soilProperties.acidity}</Text>
+                    <Text style={styles.modalDetailText}>Moisture: {selectedMarker.soilProperties.moisture}</Text>
+                    <Text style={styles.modalDetailText}>Type: {selectedMarker.soilProperties.soilType}</Text>
+                    
+                    {/* Editable fields */}
+                    {/* <TextInput
+                      style={styles.inputField}
+                      placeholder="Edit Nitrogen"
+                      value={editedNitrogen}
+                      onChangeText={text => setEditedNitrogen(text)}
+                    /> */}
+                    {/* Add similar input fields for other properties */}
+
+                    {/* Save and Cancel buttons */}
+                    <View style={styles.buttonContainer}>
+                      {/* Conditional rendering based on edit mode */}
+                      {!editMode && (
+                        <>
+                          {/* Show edit button */}
+                          <Pressable
+                            style={[styles.button, styles.buttonEdit]}
+                            onPress={() => setEditMode(true)}
+                          >
+                            <Text style={styles.textStyle}>Edit</Text>
+                          </Pressable>
+                          <Pressable
+                              style={[styles.button, styles.buttonDelete]}
+                              onPress={handleDeleteMarker}
+                            >
+                              <Text style={styles.textStyle}>Delete Marker</Text>
+                          </Pressable>
+                        </>
+                      )}
+
+                      {/* Show save and cancel buttons in edit mode */}
+                      {editMode && (
+                        <>
+                          <Pressable
+                            style={[styles.button, styles.buttonSave]}
+                            onPress={handleUpdateMarker}
+                          >
+                            <Text style={styles.textStyle}>Save</Text>
+                          </Pressable>
+                          <Pressable
+                            style={[styles.button, styles.buttonCancel]}
+                            onPress={() => {
+                              setEditMode(false); // Exit edit mode without saving
+                              // setModalVisible(false); // Close modal
+                            }}
+                          >
+                            <Text style={styles.textStyle}>Cancel</Text>
+                          </Pressable>
+                        </>
+                      )}
+                    </View>
+                  </>
+                )}
                 </View>
               </View>
             </Modal>
@@ -395,11 +521,13 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 22,
+    paddingHorizontal: 20,
   },
   modalContent: {
     backgroundColor: '#D7CCC8', // Adjust the color to match the theme
     borderRadius: 20,
     padding: 35,
+    justifyContent: 'center',
     alignItems: 'center',
     elevation: 5,
   },
@@ -438,6 +566,22 @@ const styles = StyleSheet.create({
     border: 1,
     width: 100,
     height: 100
+  },
+
+  inputField:{
+    paddingHorizontal:2
+  },
+
+  buttonContainer:{
+    border:1
+  },
+
+  buttonSave: {
+    border:1
+  },
+
+  buttonCancel:{
+    border:1
   }
 
 });
