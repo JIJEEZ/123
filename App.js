@@ -7,6 +7,7 @@ import { MaterialCommunityIcons } from '@expo/vector-icons';
 import HomeScreen from './components/pages/HomeScreen';
 import MapScreen from './components/pages/MapScreen';
 import ControlScreen from './components/pages/ControlScreen';
+import HistoryScreen from './components/pages/HistoryScreen'; // Import your HistoryScreen component
 
 const Tab = createMaterialBottomTabNavigator();
 
@@ -24,7 +25,7 @@ function MyTabs() {
         options={{
           tabBarLabel: 'Home',
           tabBarIcon: ({ color }) => (
-            <MaterialCommunityIcons name="home" color={'black'} size={26} />
+            <MaterialCommunityIcons name="home" color={color} size={26} />
           ),
         }}
       />
@@ -34,7 +35,7 @@ function MyTabs() {
         options={{
           tabBarLabel: 'Map',
           tabBarIcon: ({ color }) => (
-            <MaterialCommunityIcons name="map-marker" color={'black'} size={26} />
+            <MaterialCommunityIcons name="map-marker" color={color} size={26} />
           ),
         }}
       />
@@ -44,7 +45,17 @@ function MyTabs() {
         options={{
           tabBarLabel: 'Control',
           tabBarIcon: ({ color }) => (
-            <MaterialCommunityIcons name="car" color={'black'} size={26} />
+            <MaterialCommunityIcons name="car" color={color} size={26} />
+          ),
+        }}
+      />
+      <Tab.Screen
+        name="History"
+        component={HistoryScreen}
+        options={{
+          tabBarLabel: 'History',
+          tabBarIcon: ({ color }) => (
+            <MaterialCommunityIcons name="history" color={color} size={26} />
           ),
         }}
       />

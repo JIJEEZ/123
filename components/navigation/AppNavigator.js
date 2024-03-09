@@ -11,6 +11,7 @@ const AppNavigator = () => {
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="Control" component={ControlScreen} />
             <Stack.Screen name="Login" component={LoginScreen} />
+            <Stack.Screen name="History" component={HistoryScreen} />
         </Stack.Navigator>
     );
 };
