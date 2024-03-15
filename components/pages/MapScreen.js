@@ -6,7 +6,7 @@ import * as Location from 'expo-location';
 
 // import site_sample from './assets/site_sample.png'; 
 
-const baseUrl = "http://192.168.254.110:5000/api/"
+const baseUrl = " http://192.168.100.39:5000"
 
 const MapScreen = () => {
   const [location, setLocation] = useState(null);
@@ -32,6 +32,7 @@ const MapScreen = () => {
   const [editedLongitude, setEditedLongitude] = useState('')
   const [editedImage, setEditedImage] = useState('')
   const [editMode, setEditMode] = useState(false);
+  
 
   useEffect(() => {
     (async () => {
@@ -84,6 +85,29 @@ const MapScreen = () => {
   const handleMarkerPress = (marker) => {
     setSelectedMarker(marker);
     setModalVisible(true);
+    setEditedNitrogen(marker.soilProperties.nitrogen);
+    setEditedPhosphorus(marker.soilProperties.phosphorus);
+    setEditedPotassium(marker.soilProperties.potassium);
+    setEditedAcidity(marker.soilProperties.acidity);
+    setEditedMoisture(marker.soilProperties.moisture);
+    setEditedType(marker.soilProperties.soilType);
+    setEditedImage(marker.soilProperties.image);
+    setEditMode(false);
+  };
+
+  const handleEditPress = () => {
+    setEditMode(!editMode);
+  };
+
+  const handleInputChange = (key, value) => {
+    // Update the corresponding property in the selectedMarker state
+    setSelectedMarker((prevMarker) => ({
+      ...prevMarker,
+      soilProperties: {
+        ...prevMarker.soilProperties,
+        [key]: value,
+      },
+    }));
   };
 
   const generateRandomSoilProperties = () => {
@@ -306,16 +330,35 @@ const MapScreen = () => {
 
   
     if (result) {
-      setSelectedMarker({ ...selectedMarker, soilProperties: entries });
-      setMarkers([...markers])
-      console.log(selectedMarker);
-      console.log("Edits Saved.");
+      setSelectedMarker((prevMarker) => ({
+        ...prevMarker,
+        soilProperties: entries,
+      }));
+      setMarkers((prevMarkers) => {
+        const updatedMarkers = prevMarkers.map((marker) =>
+          marker.mapId === selectedMarker.mapId
+            ? { ...marker, soilProperties: entries }
+            : marker
+        );
+        return updatedMarkers;
+      });
       setEditMode(false); // Exit edit mode after saving
     } else {
       console.log("Failed to update marker.");
     }
   
     return selectedMarker;
+  }
+
+  function handleCancelEdit() {
+    // Restore original values when canceling edit mode
+    setEditedNitrogen(selectedMarker.soilProperties.nitrogen);
+    setEditedPhosphorus(selectedMarker.soilProperties.phosphorus);
+    setEditedPotassium(selectedMarker.soilProperties.potassium);
+    setEditedAcidity(selectedMarker.soilProperties.acidity);
+    setEditedMoisture(selectedMarker.soilProperties.moisture);
+    setEditedType(selectedMarker.soilProperties.soilType);
+    setEditMode(false); // Exit edit mode without saving
   }
   
 
@@ -392,76 +435,85 @@ const MapScreen = () => {
             </MapView>
             
             <Modal
-              animationType="slide"
-              transparent={true}
-              visible={modalVisible}
-              onRequestClose={() => {
-                setModalVisible(!modalVisible);
-              }}
-            >
-              <View style={styles.modalContainer}>
-                <View style={styles.modalContent}>
-                <Text style={styles.modalText}>
-                  {selectedMarker ? `Latitude: ${selectedMarker.latitude}\nLongitude: ${selectedMarker.longitude}` : ''}
-                </Text>
-                {selectedMarker && selectedMarker.soilProperties && (
-                  <>
-                    {/* Existing data display */}
-                    <Text style={styles.modalDetailText}>Nitrogen: {selectedMarker.soilProperties.nitrogen}</Text>
-                    <Text style={styles.modalDetailText}>Phosphorus: {selectedMarker.soilProperties.phosphorus}</Text>
-                    <Text style={styles.modalDetailText}>Potassium: {selectedMarker.soilProperties.potassium}</Text>
-                    <Text style={styles.modalDetailText}>Acidity: {selectedMarker.soilProperties.acidity}</Text>
-                    <Text style={styles.modalDetailText}>Moisture: {selectedMarker.soilProperties.moisture}</Text>
-                    <Text style={styles.modalDetailText}>Type: {selectedMarker.soilProperties.soilType}</Text>
-                    
-                    {/* Editable fields */}
-                    {/* <TextInput
-                      style={styles.inputField}
-                      placeholder="Edit Nitrogen"
-                      value={editedNitrogen}
-                      onChangeText={text => setEditedNitrogen(text)}
-                    /> */}
-                    {/* Add similar input fields for other properties */}
-
-                    {/* Save and Cancel buttons */}
-                    <View style={styles.buttonContainer}>
-                      {/* Conditional rendering based on edit mode */}
-                      {!editMode && (
+          animationType="slide"
+          transparent={true}
+          visible={modalVisible}
+          onRequestClose={() => {
+            setModalVisible(!modalVisible);
+          }}
+        >
+          <View style={styles.modalContainer}>
+            <View style={styles.modalContent}>
+              <Text style={styles.modalText}>
+                {selectedMarker
+                  ? `Latitude: ${selectedMarker.latitude}\nLongitude: ${selectedMarker.longitude}`
+                  : ''}
+              </Text>
+              {selectedMarker && selectedMarker.soilProperties && (
+                <>
+                  {/* Existing data display */}
+                  {Object.entries(selectedMarker.soilProperties).map(([key, value]) => (
+                    <View key={key} style={styles.propertyContainer}>
+                      {key !== 'image' && (
                         <>
-                          {/* Show edit button */}
-                          <Pressable
-                            style={[styles.button, styles.buttonEdit]}
-                            onPress={() => setEditMode(true)}
-                          >
-                            <Text style={styles.textStyle}>Edit</Text>
-                          </Pressable>
-                          <Pressable
-                              style={[styles.button, styles.buttonDelete]}
-                              onPress={handleDeleteMarker}
-                            >
-                              <Text style={styles.textStyle}>Delete Marker</Text>
-                          </Pressable>
+                          {editMode && (
+                            <View style={styles.editedValueContainer}>
+                              <Text style={styles.labelText}>{key}:</Text>
+                              <TextInput
+                                style={styles.inputField}
+                                placeholder={value.toString()}
+                                value={value.toString()}
+                                onChangeText={(text) => handleInputChange(key, text)}
+                              />
+                            </View>
+                          )}
+                          {!editMode && (
+                            <View style={styles.displayContainer}>
+                              <Text style={styles.labelText}>{key}:</Text>
+                              <Text style={styles.displayText}>{value.toString()}</Text>
+                            </View>
+                          )}
                         </>
                       )}
+                    </View>
+                  ))}
 
-                      {/* Show save and cancel buttons in edit mode */}
-                      {editMode && (
-                        <>
-                          <Pressable
-                            style={[styles.button, styles.buttonSave]}
-                            onPress={handleUpdateMarker}
-                          >
-                            <Text style={styles.textStyle}>Save</Text>
-                          </Pressable>
-                          <Pressable
-                            style={[styles.button, styles.buttonCancel]}
-                            onPress={() => {
-                              setEditMode(false); // Exit edit mode without saving
-                              // setModalVisible(false); // Close modal
-                            }}
-                          >
-                            <Text style={styles.textStyle}>Cancel</Text>
-                          </Pressable>
+                  {/* Save and Cancel buttons */}
+                  <View style={styles.buttonContainer}>
+                    {/* Conditional rendering based on edit mode */}
+                    {!editMode && (
+                      <>
+                        {/* Show edit button */}
+                        <Pressable
+                          style={[styles.button, styles.buttonEdit]}
+                          onPress={handleEditPress}
+                        >
+                          <Text style={styles.textStyle}>Edit</Text>
+                        </Pressable>
+                        <Pressable
+                          style={[styles.button, styles.buttonDelete]}
+                          onPress={handleDeleteMarker}
+                        >
+                          <Text style={styles.textStyle}>Delete Marker</Text>
+                        </Pressable>
+                      </>
+                    )}
+
+                    {/* Show save and cancel buttons in edit mode */}
+                    {editMode && (
+                      <>
+                        <Pressable
+                          style={[styles.button, styles.buttonSave]}
+                          onPress={handleUpdateMarker}
+                        >
+                          <Text style={styles.textStyle}>Save</Text>
+                        </Pressable>
+                        <Pressable
+                          style={[styles.button, styles.buttonCancel]}
+                          onPress={handleCancelEdit}
+                        >
+                          <Text style={styles.textStyle}>Cancel</Text>
+                        </Pressable>
                         </>
                       )}
                     </View>
@@ -582,8 +634,27 @@ const styles = StyleSheet.create({
 
   buttonCancel:{
     border:1
-  }
+  },
+  propertyContainer: {
+    marginBottom: 10,
+  },
+  editedValueContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: '#AB9790',
+    borderRadius: 10,
+    padding: 10,
+  },
 
+  displayContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+
+  labelText: {
+    fontWeight: 'bold',
+    marginRight: 5,
+  }
 });
 
 export default MapScreen;
